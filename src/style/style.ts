@@ -908,7 +908,7 @@ export class Style extends Evented {
         const id = layerObject.id;
 
         if (this.getLayer(id)) {
-            this.fire(new ErrorEvent(new Error(`Layer "${id}" already exists on this map.`)));
+            this.fire(new ErrorEvent(new Error(`Layer "${id}" already exists on this   map.`)));
             return;
         }
 
