@@ -31,7 +31,7 @@ The examples section of the locally run documentation will use the GL JS version
 
 ## Writing API Documentation
 
-API documentation is written as [TSDoc comments](https://tsdoc.org/) and processed with [typedoc](https://typedoc.org/)
+API documentation is written as [TSDoc comments](https://tsdoc.org/) and processed with [TypeDoc](https://typedoc.org/)
 
 * Classes, methods, events, and anything else in the public interface must be documented with TSDoc comments, and the typescript `public` can be used to indicate that it's public API.
 * The `@internal` tag can be used to indicate that a class, method, or event is not part of the public interface and should not be documented.
@@ -48,10 +48,11 @@ API documentation is written as [TSDoc comments](https://tsdoc.org/) and process
 * Member descriptions should document what a member represents or gets and sets. They should also indicate whether the member is read-only.
 * Event descriptions should begin with "Fired when..." and so should describe when the event fires. Event entries should clearly document any data passed to the handler, with a link to MDN documentation of native Event objects when applicable.
 * Lists need an empty line above to be formatted as HTML list.
+* All documentation is spellchecked with [cSpell](https://cspell.org/) as part of the linting process via a [GitHub Action](https://github.com/marketplace/actions/cspell-action). We recommend using the VS Code extension to catch any misspellings before making your PR. You can run `npx cspell "docs/**/*.html" "docs/**/*.md"` from the CLI to check all files. If there's a false-postitive (a technical term which isn't in the default dictionary) you can add it to the `.spell.json` file's words array in the root.
 
 ## Writing Examples
 
-Examples are written as regular html files in `test/examples`. Each example should have a title and a og:description.
+Examples are written as regular HTML files in `test/examples`. Each example should have a title and a og:description.
 
 * `title`: A short title for the example in **sentence case** as a **verb phrase**.
 * `description`: A one sentence description of the example in plain text. This description will appear alongside a thumbnail and title on the examples page.
