@@ -8,6 +8,8 @@
 /docs/example
 /site/
 .cache/
+.issues/
+
 *.es.js
 *.js.map
 node_modules
@@ -39,3 +41,5 @@ npm-debug.log
 /.vs/
 .*.swp
 junit.xml
+*.html
+test.*
