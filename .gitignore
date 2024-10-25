@@ -1,6 +1,7 @@
 /staging/
 /types/
-/dist/
+dist/*
+!dist/maplibre-gl-dev.js
 /dist_type/
 /test/bench/results/
 /docs/assets/examples/*.webp
