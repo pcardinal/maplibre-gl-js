@@ -24110,15 +24110,15 @@ var murmurhash3_gc$1 = {exports: {}};
 
 /**
  * JS Implementation of MurmurHash3 (r136) (as of May 20, 2011)
- *
+ * 
  * @author <a href="mailto:gary.court@gmail.com">Gary Court</a>
  * @see http://github.com/garycourt/murmurhash-js
  * @author <a href="mailto:aappleby@gmail.com">Austin Appleby</a>
  * @see http://sites.google.com/site/murmurhash/
- *
+ * 
  * @param {string} key ASCII only
  * @param {number} seed Positive integer only
- * @return {number} 32-bit positive integer hash
+ * @return {number} 32-bit positive integer hash 
  */
 var murmurhash3_gc = murmurhash3_gc$1.exports;
 
@@ -24130,22 +24130,22 @@ function requireMurmurhash3_gc () {
 	(function (module) {
 		function murmurhash3_32_gc(key, seed) {
 			var remainder, bytes, h1, h1b, c1, c1b, c2, c2b, k1, i;
-
+			
 			remainder = key.length & 3; // key.length % 4
 			bytes = key.length - remainder;
 			h1 = seed;
 			c1 = 0xcc9e2d51;
 			c2 = 0x1b873593;
 			i = 0;
-
+			
 			while (i < bytes) {
-			  	k1 =
+			  	k1 = 
 			  	  ((key.charCodeAt(i) & 0xff)) |
 			  	  ((key.charCodeAt(++i) & 0xff) << 8) |
 			  	  ((key.charCodeAt(++i) & 0xff) << 16) |
 			  	  ((key.charCodeAt(++i) & 0xff) << 24);
 				++i;
-
+				
 				k1 = ((((k1 & 0xffff) * c1) + ((((k1 >>> 16) * c1) & 0xffff) << 16))) & 0xffffffff;
 				k1 = (k1 << 15) | (k1 >>> 17);
 				k1 = ((((k1 & 0xffff) * c2) + ((((k1 >>> 16) * c2) & 0xffff) << 16))) & 0xffffffff;
@@ -24155,20 +24155,20 @@ function requireMurmurhash3_gc () {
 				h1b = ((((h1 & 0xffff) * 5) + ((((h1 >>> 16) * 5) & 0xffff) << 16))) & 0xffffffff;
 				h1 = (((h1b & 0xffff) + 0x6b64) + ((((h1b >>> 16) + 0xe654) & 0xffff) << 16));
 			}
-
+			
 			k1 = 0;
-
+			
 			switch (remainder) {
 				case 3: k1 ^= (key.charCodeAt(i + 2) & 0xff) << 16;
 				case 2: k1 ^= (key.charCodeAt(i + 1) & 0xff) << 8;
 				case 1: k1 ^= (key.charCodeAt(i) & 0xff);
-
+				
 				k1 = (((k1 & 0xffff) * c1) + ((((k1 >>> 16) * c1) & 0xffff) << 16)) & 0xffffffff;
 				k1 = (k1 << 15) | (k1 >>> 17);
 				k1 = (((k1 & 0xffff) * c2) + ((((k1 >>> 16) * c2) & 0xffff) << 16)) & 0xffffffff;
 				h1 ^= k1;
 			}
-
+			
 			h1 ^= key.length;
 
 			h1 ^= h1 >>> 16;
@@ -24182,7 +24182,7 @@ function requireMurmurhash3_gc () {
 
 		if('object' !== "undefined") {
 		  module.exports = murmurhash3_32_gc;
-		}
+		} 
 	} (murmurhash3_gc$1));
 	return murmurhash3_gc$1.exports;
 }
@@ -24191,12 +24191,12 @@ var murmurhash2_gc$1 = {exports: {}};
 
 /**
  * JS Implementation of MurmurHash2
- *
+ * 
  * @author <a href="mailto:gary.court@gmail.com">Gary Court</a>
  * @see http://github.com/garycourt/murmurhash-js
  * @author <a href="mailto:aappleby@gmail.com">Austin Appleby</a>
  * @see http://sites.google.com/site/murmurhash/
- *
+ * 
  * @param {string} str ASCII only
  * @param {number} seed Positive integer only
  * @return {number} 32-bit positive integer hash
@@ -24215,14 +24215,14 @@ function requireMurmurhash2_gc () {
 		    h = seed ^ l,
 		    i = 0,
 		    k;
-
+		  
 		  while (l >= 4) {
-		  	k =
+		  	k = 
 		  	  ((str.charCodeAt(i) & 0xff)) |
 		  	  ((str.charCodeAt(++i) & 0xff) << 8) |
 		  	  ((str.charCodeAt(++i) & 0xff) << 16) |
 		  	  ((str.charCodeAt(++i) & 0xff) << 24);
-
+		    
 		    k = (((k & 0xffff) * 0x5bd1e995) + ((((k >>> 16) * 0x5bd1e995) & 0xffff) << 16));
 		    k ^= k >>> 24;
 		    k = (((k & 0xffff) * 0x5bd1e995) + ((((k >>> 16) * 0x5bd1e995) & 0xffff) << 16));
@@ -24232,7 +24232,7 @@ function requireMurmurhash2_gc () {
 		    l -= 4;
 		    ++i;
 		  }
-
+		  
 		  switch (l) {
 		  case 3: h ^= (str.charCodeAt(i + 2) & 0xff) << 16;
 		  case 2: h ^= (str.charCodeAt(i + 1) & 0xff) << 8;
@@ -24249,7 +24249,7 @@ function requireMurmurhash2_gc () {
 
 		if('object' !== undefined) {
 		  module.exports = murmurhash2_32_gc;
-		}
+		} 
 	} (murmurhash2_gc$1));
 	return murmurhash2_gc$1.exports;
 }
@@ -28028,9 +28028,9 @@ const FACTOR = Math.pow(2, 13);
 function addVertex$1(vertexArray, x, y, nx, ny, nz, t, e) {
     vertexArray.emplaceBack(
     // a_pos
-    x, y,
+    x, y, 
     // a_normal_ed: 3-component normal and 1-component edgedistance
-    Math.floor(nx * FACTOR) * 2 + t, ny * FACTOR * 2, nz * FACTOR * 2,
+    Math.floor(nx * FACTOR) * 2 + t, ny * FACTOR * 2, nz * FACTOR * 2, 
     // edgedistance (used for wrapping patterns around extrusion sides)
     Math.round(e));
 }
@@ -28823,10 +28823,10 @@ class LineBucket {
         this.layoutVertexArray.emplaceBack(
         // a_pos_normal
         // Encode round/up the least significant bits
-        (x << 1) + (round ? 1 : 0), (y << 1) + (up ? 1 : 0),
+        (x << 1) + (round ? 1 : 0), (y << 1) + (up ? 1 : 0), 
         // a_data
         // add 128 to store a byte in an unsigned byte
-        Math.round(EXTRUDE_SCALE * extrudeX) + 128, Math.round(EXTRUDE_SCALE * extrudeY) + 128,
+        Math.round(EXTRUDE_SCALE * extrudeX) + 128, Math.round(EXTRUDE_SCALE * extrudeY) + 128, 
         // Encode the -1/0/1 direction value into the first two bits of .z of a_data.
         // Combine it with the lower 6 bits of `linesofarScaled` (shifted by 2 bits to make
         // room for the direction value). The upper 8 bits of `linesofarScaled` are placed in
@@ -30968,7 +30968,7 @@ function addVertex(array, anchorX, anchorY, ox, oy, tx, ty, sizeVertex, isSDF, p
     const aSizeY = sizeVertex ? Math.min(MAX_PACKED_SIZE, Math.round(sizeVertex[1])) : 0;
     array.emplaceBack(
     // a_pos_offset
-    anchorX, anchorY, Math.round(ox * 32), Math.round(oy * 32),
+    anchorX, anchorY, Math.round(ox * 32), Math.round(oy * 32), 
     // a_data
     tx, // x coordinate of symbol on glyph atlas texture
     ty, // y coordinate of symbol on glyph atlas texture
@@ -31342,9 +31342,9 @@ class SymbolBucket {
                 arrays.programConfigurations.populatePaintArrays(layoutVertexArray.length, feature, feature.index, {}, canonical, sections && sections[sectionIndex]);
             }
         }
-        arrays.placedSymbolArray.emplaceBack(labelAnchor.x, labelAnchor.y, glyphOffsetArrayStart, this.glyphOffsetArray.length - glyphOffsetArrayStart, vertexStartIndex, lineStartIndex, lineLength, labelAnchor.segment, sizeVertex ? sizeVertex[0] : 0, sizeVertex ? sizeVertex[1] : 0, lineOffset[0], lineOffset[1], writingMode,
+        arrays.placedSymbolArray.emplaceBack(labelAnchor.x, labelAnchor.y, glyphOffsetArrayStart, this.glyphOffsetArray.length - glyphOffsetArrayStart, vertexStartIndex, lineStartIndex, lineLength, labelAnchor.segment, sizeVertex ? sizeVertex[0] : 0, sizeVertex ? sizeVertex[1] : 0, lineOffset[0], lineOffset[1], writingMode, 
         // placedOrientation is null initially; will be updated to horizontal(1)/vertical(2) if placed
-        0, false,
+        0, false, 
         // The crossTileID is only filled/used on the foreground for dynamic text anchors
         0, associatedIconIndex);
     }
@@ -31352,9 +31352,9 @@ class SymbolBucket {
         collisionVertexArray.emplaceBack(0, 0);
         return layoutVertexArray.emplaceBack(
         // pos
-        point.x, point.y,
+        point.x, point.y, 
         // a_anchor_pos
-        anchorX, anchorY,
+        anchorX, anchorY, 
         // extrude
         Math.round(extrude.x), Math.round(extrude.y));
     }
@@ -34321,13 +34321,13 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
                 warnOnce(`${bucket.layerIds[0]}: Value for "icon-size" is >= ${MAX_GLYPH_ICON_SIZE}. Reduce your "icon-size".`);
             }
         }
-        bucket.addSymbols(bucket.icon, iconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.none, anchor, lineArray.lineStartIndex, lineArray.lineLength,
+        bucket.addSymbols(bucket.icon, iconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.none, anchor, lineArray.lineStartIndex, lineArray.lineLength, 
         // The icon itself does not have an associated symbol since the text isn't placed yet
         -1, canonical);
         placedIconSymbolIndex = bucket.icon.placedSymbolArray.length - 1;
         if (verticalIconQuads) {
             numVerticalIconVertices = verticalIconQuads.length * 4;
-            bucket.addSymbols(bucket.icon, verticalIconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.vertical, anchor, lineArray.lineStartIndex, lineArray.lineLength,
+            bucket.addSymbols(bucket.icon, verticalIconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.vertical, anchor, lineArray.lineStartIndex, lineArray.lineLength, 
             // The icon itself does not have an associated symbol since the text isn't placed yet
             -1, canonical);
             verticalPlacedIconSymbolIndex = bucket.icon.placedSymbolArray.length - 1;
@@ -39346,12 +39346,7 @@ class LineAtlas {
 }
 
 function workerFactory() {
-    //return new Worker(performance$1.config.WORKER_URL);
-    //*pc
-    //return new Worker('http://127.0.0.1:5500/dist/worker.js');
-    //return new Worker('http://localhost:5500/dist/worker.js');
-    return new Worker('http://' +window.location.host + '/dist/worker.js');
-    //*/
+    return new Worker(performance$1.config.WORKER_URL);
 }
 
 const PRELOAD_POOL_ID = 'maplibre_preloaded_worker_pool';
@@ -44300,7 +44295,7 @@ class CollisionIndex {
             height: this.transform.height,
             translation
         };
-        const firstAndLastGlyph = placeFirstAndLastGlyph(labelPlaneFontScale, glyphOffsetArray, lineOffsetX, lineOffsetY,
+        const firstAndLastGlyph = placeFirstAndLastGlyph(labelPlaneFontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, 
         /*flip*/ false, symbol, false, projectionContext);
         let collisionDetected = false;
         let inGrid = false;
@@ -47906,7 +47901,7 @@ class MercatorCameraHelper {
         const rotatedPaddingOffset = paddingOffset.rotate(performance$1.degreesToRadians(bearing));
         const offsetAtInitialZoom = offset.add(rotatedPaddingOffset);
         const offsetAtFinalZoom = offsetAtInitialZoom.mult(tr.scale / zoomScale(zoom));
-        const center = unprojectFromWorldCoordinates(tr.worldSize,
+        const center = unprojectFromWorldCoordinates(tr.worldSize, 
         // either world diagonal can be used (NW-SE or NE-SW)
         nwWorld.add(seWorld).div(2).sub(offsetAtFinalZoom));
         const result = {
@@ -55317,7 +55312,7 @@ class Painter {
             const terrainData = this.style.map.terrain && this.style.map.terrain.getTerrainData(tileID);
             const mesh = projection.getMeshFromTileID(this.context, tileID.canonical, useBorders, true, 'stencil');
             const projectionData = transform.getProjectionData(tileID);
-            program.draw(context, gl.TRIANGLES, DepthMode.disabled,
+            program.draw(context, gl.TRIANGLES, DepthMode.disabled, 
             // Tests will always pass, and ref value will be written to stencil buffer.
             new StencilMode({ func: gl.ALWAYS, mask: 0 }, stencilRef, 0xFF, gl.KEEP, gl.KEEP, gl.REPLACE), ColorMode.disabled, renderToTexture ? CullFaceMode.disabled : CullFaceMode.backCCW, null, terrainData, projectionData, '$clipping', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
         }
@@ -55853,7 +55848,7 @@ class Hash {
         return this;
     }
     getHashString(mapFeedback) {
-        const center = this._map.getCenter(), zoom = Math.round(this._map.getZoom() * 100) / 100,
+        const center = this._map.getCenter(), zoom = Math.round(this._map.getZoom() * 100) / 100, 
         // derived from equation: 512px * 2^z / 360 / 10^d < 0.5px
         precision = Math.ceil((zoom * Math.LN2 + Math.log(512 / 360 / 0.5)) / Math.LN10), m = Math.pow(10, precision), lng = Math.round(center.lng * m) / m, lat = Math.round(center.lat * m) / m, bearing = this._map.getBearing(), pitch = this._map.getPitch();
         let hash = '';
@@ -64915,8 +64910,6 @@ function updateScale(map, container, options) {
     const y = map._container.clientHeight / 2;
     const x = map._container.clientWidth / 2;
     const left = map.unproject([x - maxWidth / 2, y]);
-    //const left = map.unproject([0, y]);
-    //const right = map.unproject([maxWidth, y]);
     const right = map.unproject([x + maxWidth / 2, y]);
     const maxMeters = left.distanceTo(right);
     // The real distance corresponding to 100px scale length is rounded off to
