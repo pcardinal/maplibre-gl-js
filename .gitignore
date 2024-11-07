@@ -1,7 +1,6 @@
 /staging/
 /types/
-dist/*
-!dist/maplibre-gl-dev.js
+/dist/
 /dist_type/
 /test/bench/results/
 /docs/API
@@ -10,8 +9,6 @@ dist/*
 /docs/plugins.md
 /site/
 .cache/
-.issues/
-
 *.es.js
 *.js.map
 node_modules
@@ -43,5 +40,3 @@ npm-debug.log
 /.vs/
 .*.swp
 junit.xml
-*.html
-test.*
