@@ -1,11 +1,12 @@
 import {OverscaledTileID} from '../../source/tile_id';
-import {Aabb, Frustum, IntersectionResult} from '../../util/primitives';
 import {vec2, vec4} from 'gl-matrix';
 import {IReadonlyTransform} from '../transform_interface';
 import {MercatorCoordinate} from '../mercator_coordinate';
 import {scaleZoom} from '../transform_helper';
 import {clamp, degreesToRadians} from '../../util/util';
 import {Terrain} from '../../render/terrain';
+import {Frustum} from '../../util/primitives/frustum';
+import {Aabb, IntersectionResult} from '../../util/primitives/aabb';
 
 type CoveringTilesResult = {
     tileID: OverscaledTileID;
@@ -240,7 +241,7 @@ export function coveringTiles(transform: IReadonlyTransform, options: CoveringTi
             const dz = nominalZ - it.zoom;
             const dx = cameraPoint[0] - 0.5 - (x << dz);
             const dy = cameraPoint[1] - 0.5 - (y << dz);
-            const overscaledZ = options.reparseOverscaled ? thisTileDesiredZ : it.zoom;
+            const overscaledZ = options.reparseOverscaled ? Math.max(it.zoom, thisTileDesiredZ) : it.zoom;
             result.push({
                 tileID: new OverscaledTileID(it.zoom === maxZoom ? overscaledZ : it.zoom, it.wrap, it.zoom, x, y),
                 distanceSq: vec2.sqrLen([centerPoint[0] - 0.5 - x, centerPoint[1] - 0.5 - y]),
