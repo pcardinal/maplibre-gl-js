@@ -1,7 +1,7 @@
-import {Aabb} from '../../util/primitives/aabb';
-import {MercatorCoordinate} from '../mercator_coordinate';
-import {IReadonlyTransform} from '../transform_interface';
-import {CoveringTilesOptions} from './covering_tiles';
+import {type Aabb} from '../../util/primitives/aabb';
+import {type MercatorCoordinate} from '../mercator_coordinate';
+import {type IReadonlyTransform} from '../transform_interface';
+import {type CoveringTilesOptions} from './covering_tiles';
 
 export interface CoveringTilesDetailsProvider {
     /**
@@ -31,4 +31,9 @@ export interface CoveringTilesDetailsProvider {
      * Whether to allow variable zoom, which is used at high pitch angle to avoid loading an excessive amount of tiles.
      */
     allowVariableZoom: (transform: IReadonlyTransform, options: CoveringTilesOptions) => boolean;
+
+    /**
+     * Whether to allow world copies to be rendered.
+     */
+    allowWorldCopies: () => boolean;
 }

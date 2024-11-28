@@ -1,10 +1,10 @@
-import {vec3} from 'gl-matrix';
-import {IReadonlyTransform} from '../transform_interface';
-import {MercatorCoordinate} from '../mercator_coordinate';
+import {type vec3} from 'gl-matrix';
+import {type IReadonlyTransform} from '../transform_interface';
+import {type MercatorCoordinate} from '../mercator_coordinate';
 import {EXTENT} from '../../data/extent';
 import {projectTileCoordinatesToSphere} from './globe_utils';
-import {CoveringTilesOptions, coveringZoomLevel} from './covering_tiles';
-import {CoveringTilesDetailsProvider} from './covering_tiles_details_provider';
+import {type CoveringTilesOptions, coveringZoomLevel} from './covering_tiles';
+import {type CoveringTilesDetailsProvider} from './covering_tiles_details_provider';
 import {Aabb} from '../../util/primitives/aabb';
 import {AabbCache} from '../../util/primitives/aabb_cache';
 
@@ -96,6 +96,10 @@ export class GlobeCoveringTilesDetailsProvider implements CoveringTilesDetailsPr
     
     allowVariableZoom(transform: IReadonlyTransform, options: CoveringTilesOptions): boolean {
         return coveringZoomLevel(transform, options) > 4;
+    }
+
+    allowWorldCopies(): boolean {
+        return false;
     }
 
     getTileAABB(tileID: { x: number; y: number; z: number }, wrap: number, elevation: number, options: CoveringTilesOptions) {

@@ -1,6 +1,6 @@
 import {Event} from '../util/evented';
 import {DOM} from '../util/dom';
-import {Map, CompleteMapOptions} from './map';
+import {type Map, type CompleteMapOptions} from './map';
 import {HandlerInertia} from './handler_inertia';
 import {MapEventHandler, BlockableMapEventHandler} from './handler/map_event';
 import {BoxZoomHandler} from './handler/box_zoom';
@@ -20,7 +20,7 @@ import {CooperativeGesturesHandler} from './handler/cooperative_gestures';
 import {extend} from '../util/util';
 import {browser} from '../util/browser';
 import Point from '@mapbox/point-geometry';
-import {MapControlsDeltas} from '../geo/projection/camera_helper';
+import {type MapControlsDeltas} from '../geo/projection/camera_helper';
 
 const isMoving = (p: EventsInProgress) => p.zoom || p.drag || p.roll || p.pitch || p.rotate;
 
@@ -253,10 +253,10 @@ export class HandlerManager {
         if (options.interactive && options.touchPitch) {
             map.touchPitch.enable(options.touchPitch);
         }
-
-        const mouseRotate = generateMouseRotationHandler(options);
+        const getCenter = () => map.project(map.getCenter());
+        const mouseRotate = generateMouseRotationHandler(options, getCenter);
         const mousePitch = generateMousePitchHandler(options);
-        const mouseRoll = generateMouseRollHandler(options);
+        const mouseRoll = generateMouseRollHandler(options, getCenter);
         map.dragRotate = new DragRotateHandler(options, mouseRotate, mousePitch, mouseRoll);
         this._add('mouseRotate', mouseRotate, ['mousePitch']);
         this._add('mousePitch', mousePitch, ['mouseRotate', 'mouseRoll']);

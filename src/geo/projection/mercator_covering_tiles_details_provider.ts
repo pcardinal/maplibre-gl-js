@@ -1,10 +1,10 @@
 import {OverscaledTileID} from '../../source/tile_id';
 import {Aabb} from '../../util/primitives/aabb';
 import {clamp} from '../../util/util';
-import {MercatorCoordinate} from '../mercator_coordinate';
-import {IReadonlyTransform} from '../transform_interface';
-import {CoveringTilesOptions} from './covering_tiles';
-import {CoveringTilesDetailsProvider} from './covering_tiles_details_provider';
+import {type MercatorCoordinate} from '../mercator_coordinate';
+import {type IReadonlyTransform} from '../transform_interface';
+import {type CoveringTilesOptions} from './covering_tiles';
+import {type CoveringTilesDetailsProvider} from './covering_tiles_details_provider';
 
 export class MercatorCoveringTilesDetailsProvider implements CoveringTilesDetailsProvider {
 
@@ -43,5 +43,9 @@ export class MercatorCoveringTilesDetailsProvider implements CoveringTilesDetail
         const zfov = transform.fov * (Math.abs(Math.cos(transform.rollInRadians)) * transform.height + Math.abs(Math.sin(transform.rollInRadians)) * transform.width) / transform.height;
         const maxConstantZoomPitch = clamp(78.5 - zfov / 2, 0.0, 60.0);
         return (!!options.terrain || transform.pitch > maxConstantZoomPitch || transform.padding.top >= 0.1)
+    }
+
+    allowWorldCopies(): boolean {
+        return true;
     }
 }
