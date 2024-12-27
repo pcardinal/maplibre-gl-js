@@ -1,21 +1,20 @@
-import {extend, wrap, defaultEasing, pick} from '../util/util';
+import {extend, wrap, defaultEasing, pick, scaleZoom} from '../util/util';
 import {interpolates} from '@maplibre/maplibre-gl-style-spec';
 import {browser} from '../util/browser';
 import {LngLat} from '../geo/lng_lat';
 import {LngLatBounds} from '../geo/lng_lat_bounds';
 import Point from '@mapbox/point-geometry';
 import {Event, Evented} from '../util/evented';
-import {type Terrain} from '../render/terrain';
 import {MercatorCoordinate} from '../geo/mercator_coordinate';
 
+import type {Terrain} from '../render/terrain';
 import type {ITransform} from '../geo/transform_interface';
 import type {LngLatLike} from '../geo/lng_lat';
 import type {LngLatBoundsLike} from '../geo/lng_lat_bounds';
 import type {TaskID} from '../util/task_queue';
 import type {PaddingOptions} from '../geo/edge_insets';
 import type {HandlerManager} from './handler_manager';
-import {scaleZoom} from '../geo/transform_helper';
-import {type ICameraHelper} from '../geo/projection/camera_helper';
+import type {ICameraHelper} from '../geo/projection/camera_helper';
 
 /**
  * A [Point](https://github.com/mapbox/point-geometry) or an array of two numbers representing `x` and `y` screen coordinates in pixels.
@@ -87,7 +86,7 @@ export type CenterZoomBearing = {
      * is "up". For example, `bearing: 90` orients the map so that east is up.
      */
     bearing?: number;
-}
+};
 
 /**
  * The options object related to the {@link Map#jumpTo} method
@@ -97,7 +96,7 @@ export type JumpToOptions = CameraOptions & {
      * Dimensions in pixels applied on each side of the viewport for shifting the vanishing point.
      */
     padding?: PaddingOptions;
-}
+};
 
 /**
  * A options object for the {@link Map#cameraForBounds} method
@@ -116,7 +115,7 @@ export type CameraForBoundsOptions = CameraOptions & {
      * The maximum zoom level to allow when the camera would transition to the specified bounds.
      */
     maxZoom?: number;
-}
+};
 
 /**
  * The {@link Map#flyTo} options object
@@ -160,7 +159,7 @@ export type FlyToOptions = AnimationOptions & CameraOptions & {
      * The amount of padding in pixels to add to the given bounds.
      */
     padding?: number | PaddingOptions;
-}
+};
 
 /**
  * The {@link Map#easeTo} options object
@@ -174,7 +173,7 @@ export type EaseToOptions = AnimationOptions & CameraOptions & {
     around?: LngLatLike;
     easeId?: string;
     noMoveStart?: boolean;
-}
+};
 
 /**
  * Options for {@link Map#fitBounds} method
@@ -195,7 +194,7 @@ export type FitBoundsOptions = FlyToOptions & {
      * The maximum zoom level to allow when the map view transitions to the specified bounds.
      */
     maxZoom?: number;
-}
+};
 
 /**
  * Options common to map movement methods that involve animation, such as {@link Map#panBy} and

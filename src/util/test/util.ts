@@ -9,7 +9,7 @@ import {MercatorTransform} from '../../geo/projection/mercator_transform';
 import {RequestManager} from '../request_manager';
 import {type IReadonlyTransform, type ITransform} from '../../geo/transform_interface';
 import {type Style} from '../../style/style';
-import type {GlobeProjection} from '../../geo/projection/globe';
+import {type Terrain} from '../../render/terrain';
 
 export class StubMap extends Evented {
     style: Style;
@@ -225,13 +225,32 @@ export function expectToBeCloseToArray(actual: Array<number>, expected: Array<nu
     }
 }
 
-export function getGlobeProjectionMock(): GlobeProjection {
+export function createTerrain(): Terrain {
     return {
-        get useGlobeControls(): boolean {
-            return true;
+        pointCoordinate: () => null,
+        getElevationForLngLatZoom: () => 1000,
+        getMinTileElevationForLngLatZoom: () => 0,
+        getFramebuffer: () => ({}),
+        getCoordsTexture: () => ({}),
+        depthAtPoint: () => .9,
+        sourceCache: {
+            update: () => {},
+            getRenderableTiles: () => [],
+            anyTilesAfterTime: () => false
+        }
+    } as any as Terrain;
+}
+
+export function createFramebuffer() {
+    return {
+        colorAttachment: {
+            get: () => null,
+            set: () => {}
         },
-        useGlobeRendering: true,
-        latitudeErrorCorrectionRadians: 0,
-        errorQueryLatitudeDegrees: 0,
-    } as GlobeProjection;
+        depthAttachment: {
+            get: () => null,
+            set: () => {}
+        },
+        destroy: () => {}
+    };
 }

@@ -407,6 +407,16 @@ export function nextPowerOfTwo(value: number): number {
 }
 
 /**
+ * Computes scaling from zoom level.
+ */
+export function zoomScale(zoom: number) { return Math.pow(2, zoom); }
+
+/**
+ * Computes zoom level from scaling.
+ */
+export function scaleZoom(scale: number) { return Math.log(scale) / Math.LN2; }
+
+/**
  * Create an object by mapping all the values of an existing object while
  * preserving their keys.
  */
@@ -988,7 +998,7 @@ export function rollPitchBearingToQuat(roll: number, pitch: number, bearing: num
 
 export type Complete<T> = {
     [P in keyof Required<T>]: Pick<T, P> extends Required<Pick<T, P>> ? T[P] : (T[P] | undefined);
-}
+};
 
 /**
  * A helper to allow require of at least one property
@@ -1023,3 +1033,5 @@ export const MAX_TILE_ZOOM = 25;
  * In other words, the lower bound supported for tile zoom.
  */
 export const MIN_TILE_ZOOM = 0;
+
+export const MAX_VALID_LATITUDE = 85.051129;

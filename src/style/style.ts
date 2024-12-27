@@ -184,7 +184,7 @@ export type StyleSwapOptions = {
      * that allows to modify a style after it is fetched but before it is committed to the map state. Refer to {@link TransformStyleFunction}.
      */
     transformStyle?: TransformStyleFunction;
-}
+};
 
 /**
  * Specifies a layer to be added to a {@link Style}. In addition to a standard {@link LayerSpecification}
@@ -203,7 +203,7 @@ export class Style extends Evented {
     glyphManager: GlyphManager;
     lineAtlas: LineAtlas;
     light: Light;
-    projection: Projection;
+    projection: Projection | undefined;
     sky: Sky;
 
     _frameRequest: AbortController;
@@ -545,11 +545,15 @@ export class Style extends Evented {
     }
 
     hasTransitions() {
-        if (this.light && this.light.hasTransition()) {
+        if (this.light?.hasTransition()) {
             return true;
         }
 
-        if (this.sky && this.sky.hasTransition()) {
+        if (this.sky?.hasTransition()) {
+            return true;
+        }
+
+        if (this.projection?.hasTransition()) {
             return true;
         }
 
@@ -657,6 +661,7 @@ export class Style extends Evented {
 
         this.light.recalculate(parameters);
         this.sky.recalculate(parameters);
+        this.projection.recalculate(parameters);
         this.z = parameters.zoom;
 
         if (changed) {
