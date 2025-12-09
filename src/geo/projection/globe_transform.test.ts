@@ -3,7 +3,7 @@ import {EXTENT} from '../../data/extent';
 import Point from '@mapbox/point-geometry';
 import {LngLat} from '../lng_lat';
 import {GlobeTransform} from './globe_transform';
-import {CanonicalTileID, OverscaledTileID, UnwrappedTileID} from '../../source/tile_id';
+import {CanonicalTileID, OverscaledTileID, UnwrappedTileID} from '../../tile/tile_id';
 import {angularCoordinatesRadiansToVector, mercatorCoordinatesToAngularCoordinatesRadians, sphereSurfacePointToCoordinates} from './globe_utils';
 import {expectToBeCloseToArray} from '../../util/test/util';
 import {MercatorCoordinate} from '../mercator_coordinate';
@@ -62,13 +62,13 @@ describe('GlobeTransform', () => {
         describe('general plane properties', () => {
             const projectionData = globeTransform.getProjectionData({overscaledTileID: new OverscaledTileID(0, 0, 0, 0, 0)});
 
-            test('plane vector length', () => {
+            test('plane vector length <= 1 so they are not clipped by the near plane.', () => {
                 const len = Math.sqrt(
                     projectionData.clippingPlane[0] * projectionData.clippingPlane[0] +
                     projectionData.clippingPlane[1] * projectionData.clippingPlane[1] +
                     projectionData.clippingPlane[2] * projectionData.clippingPlane[2]
                 );
-                expect(len).toBeCloseTo(0.25);
+                expect(len).toBeLessThanOrEqual(1);
             });
 
             test('camera is in positive halfspace', () => {
@@ -290,8 +290,20 @@ describe('GlobeTransform', () => {
                 globeTransform.setPitch(60);
                 globeTransform.setBearing(-90);
                 const unprojected = globeTransform.screenPointToLocation(screenTopEdgeCenter);
-                expect(unprojected.lng).toBeCloseTo(-34.699626794124015, precisionDigits);
+                expect(unprojected.lng).toBeCloseTo(-28.990298145461963, precisionDigits);
                 expect(unprojected.lat).toBeCloseTo(0.0, precisionDigits);
+            });
+
+            test('unproject further outside of sphere clamps to horizon', () => {
+                const globeTransform = createGlobeTransform();
+                globeTransform.setPitch(60);
+                globeTransform.setBearing(-90);
+                const screenPointAboveWesternHorizon = screenTopEdgeCenter;
+                const screenPointFurtherAboveWesternHorizon = screenTopEdgeCenter.sub(new Point(0, -100));
+                const unprojected = globeTransform.screenPointToLocation(screenPointAboveWesternHorizon);
+                const unprojected2 = globeTransform.screenPointToLocation(screenPointFurtherAboveWesternHorizon);
+                expect(unprojected.lat).toBeCloseTo(unprojected2.lat, 10);
+                expect(unprojected.lng).toBeCloseTo(unprojected2.lng, 10);
             });
         });
 
@@ -467,10 +479,10 @@ describe('GlobeTransform', () => {
             globeTransform.setCenter(new LngLat(0, 0));
             globeTransform.setZoom(1);
             const bounds = globeTransform.getBounds();
-            expect(bounds._ne.lat).toBeCloseTo(83.96012370156063, precisionDigits);
-            expect(bounds._ne.lng).toBeCloseTo(85.46274667048044, precisionDigits);
-            expect(bounds._sw.lat).toBeCloseTo(-83.96012370156063, precisionDigits);
-            expect(bounds._sw.lng).toBeCloseTo(-85.46274667048044, precisionDigits);
+            expect(bounds._ne.lat).toBeCloseTo(79.3636705287052, precisionDigits);
+            expect(bounds._ne.lng).toBeCloseTo(79.36367052870514, precisionDigits);
+            expect(bounds._sw.lat).toBeCloseTo(-79.3636705287052, precisionDigits);
+            expect(bounds._sw.lng).toBeCloseTo(-79.3636705287052, precisionDigits);
         });
 
         test('zoomed in', () => {
@@ -487,7 +499,7 @@ describe('GlobeTransform', () => {
             globeTransform.setCenter(new LngLat(0, -84));
             globeTransform.setZoom(-2);
             const bounds = globeTransform.getBounds();
-            expect(bounds._ne.lat).toBeCloseTo(-1.2776252401855572, precisionDigits);
+            expect(bounds._ne.lat).toBeCloseTo(-6.299534770946991, precisionDigits);
             expect(bounds._ne.lng).toBeCloseTo(180, precisionDigits);
             expect(bounds._sw.lat).toBeCloseTo(-90, precisionDigits);
             expect(bounds._sw.lng).toBeCloseTo(-180, precisionDigits);
@@ -585,7 +597,7 @@ describe('GlobeTransform', () => {
         test('change transform and make sure render world copies is kept', () => {
             const globeTransform = createGlobeTransform();
             globeTransform.setRenderWorldCopies(true);
-            const mercator = new MercatorTransform(0, 1, 2, 3, false);
+            const mercator = new MercatorTransform({minZoom: 0, maxZoom: 1, minPitch: 2, maxPitch: 3, renderWorldCopies: false});
             mercator.apply(globeTransform);
 
             expect(mercator.renderWorldCopies).toBeTruthy();

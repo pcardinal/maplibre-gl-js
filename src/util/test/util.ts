@@ -9,6 +9,9 @@ import {MercatorTransform} from '../../geo/projection/mercator_transform';
 import {RequestManager} from '../request_manager';
 import {type IReadonlyTransform, type ITransform} from '../../geo/transform_interface';
 import {type Style} from '../../style/style';
+import {type Terrain} from '../../render/terrain';
+import {Frustum} from '../primitives/frustum';
+import {mat4} from 'gl-matrix';
 
 export class StubMap extends Evented {
     style: Style;
@@ -39,7 +42,7 @@ export class StubMap extends Evented {
     }
 }
 
-export function createMap(options?, callback?) {
+export function createMap(options?) {
     const container = window.document.createElement('div');
     const defaultOptions = {
         container,
@@ -60,9 +63,6 @@ export function createMap(options?, callback?) {
     if (options?.deleteStyle) delete defaultOptions.style;
 
     const map = new Map(extend(defaultOptions, options));
-    if (callback) map.on('load', () => {
-        callback(null, map);
-    });
 
     return map;
 }
@@ -99,11 +99,11 @@ export function setMatchMedia() {
 }
 
 function setResizeObserver() {
-    global.ResizeObserver = vi.fn().mockImplementation(() => ({
-        observe: vi.fn(),
-        unobserve: vi.fn(),
-        disconnect: vi.fn(),
-    }));
+    global.ResizeObserver = vi.fn(class {
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+    });
 }
 
 export function beforeMapTest() {
@@ -222,4 +222,60 @@ export function expectToBeCloseToArray(actual: Array<number>, expected: Array<nu
     for (let i = 0; i < expected.length; i++) {
         expect(actual[i]).toBeCloseTo(expected[i], precision);
     }
+}
+
+export function createTerrain(): Terrain {
+    return {
+        pointCoordinate: () => null,
+        getElevationForLngLatZoom: () => 1000,
+        getMinTileElevationForLngLatZoom: () => 0,
+        getFramebuffer: () => ({}),
+        getCoordsTexture: () => ({}),
+        depthAtPoint: () => .9,
+        tileManager: {
+            update: () => {},
+            getRenderableTiles: () => [],
+            anyTilesAfterTime: () => false
+        }
+    } as any as Terrain;
+}
+
+export function createFramebuffer() {
+    return {
+        colorAttachment: {
+            get: () => null,
+            set: () => {}
+        },
+        depthAttachment: {
+            get: () => null,
+            set: () => {}
+        },
+        destroy: () => {}
+    };
+}
+
+export function waitForEvent(evented: Evented, eventName: string, predicate: (e: any) => boolean): Promise<any> {
+    return new Promise((resolve) => {
+        const listener = (e: Event) => {
+            if (predicate(e)) {
+                resolve(e);
+            }
+        };
+        evented.on(eventName, listener);
+    });
+}
+
+export function createTestCameraFrustum(fovy: number, aspectRatio: number, zNear: number, zFar: number, elevation: number, rotation: number): Frustum {
+    const proj = new Float64Array(16) as any as mat4;
+    const invProj = new Float64Array(16) as any as mat4;
+
+    // Note that left handed coordinate space is used where z goes towards the sky.
+    // Y has to be flipped as well because it's part of the projection/camera matrix used in transform.js
+    mat4.perspective(proj, fovy, aspectRatio, zNear, zFar);
+    mat4.scale(proj, proj, [1, -1, 1]);
+    mat4.translate(proj, proj, [0, 0, elevation]);
+    mat4.rotateZ(proj, proj, rotation);
+    mat4.invert(invProj, proj);
+
+    return Frustum.fromInvProjectionMatrix(invProj, 1.0, 0.0);
 }

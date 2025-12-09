@@ -6,15 +6,16 @@ import pixelmatch from 'pixelmatch';
 import {fileURLToPath} from 'url';
 import {globSync} from 'glob';
 import http from 'http';
-import puppeteer, {type Page, type Browser} from 'puppeteer';
 import {CoverageReport} from 'monocart-coverage-reports';
-import {localizeURLs} from '../lib/localize-urls';
-import type {Map as MaplibreMap, CanvasSource, PointLike, StyleSpecification} from '../../../dist/maplibre-gl';
 import junitReportBuilder, {type TestSuite} from 'junit-report-builder';
-import type * as maplibreglModule from '../../../dist/maplibre-gl';
+import type {Page, Browser} from 'puppeteer';
+
+import {localizeURLs} from '../lib/localize-urls';
+import {launchPuppeteer} from '../lib/puppeteer_config';
+import type {default as MapLibreGL, Map as MaplibreMap, CanvasSource, PointLike, StyleSpecification} from '../../../dist/maplibre-gl';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-let maplibregl: typeof maplibreglModule;
+let maplibregl: typeof MapLibreGL;
 
 type TestData = {
     id: string;
@@ -56,7 +57,7 @@ type TestData = {
     actual: string;
     diff: string;
     expected: string;
-}
+};
 
 type RenderOptions = {
     tests: any[];
@@ -65,13 +66,13 @@ type RenderOptions = {
     seed: string;
     debug: boolean;
     openBrowser: boolean;
-}
+};
 
 type StyleWithTestData = StyleSpecification & {
     metadata : {
         test: TestData;
     };
-}
+};
 
 type TestStats = {
     total: number;
@@ -156,11 +157,6 @@ function compareRenderResults(directory: string, testData: TestData, data: Uint8
         throw new Error(`No expected*.png files found as ${dir}; did you mean to run tests with UPDATE=true?`);
     }
 
-    if (process.env.UPDATE) {
-        fs.writeFileSync(expectedPath, PNG.sync.write(actualImg));
-        return;
-    }
-
     // if we have multiple expected images, we'll compare against each one and pick the one with
     // the least amount of difference; this is useful for covering features that render differently
     // depending on platform, i.e. heatmaps use half-float textures for improved rendering where supported
@@ -187,16 +183,21 @@ function compareRenderResults(directory: string, testData: TestData, data: Uint8
         }
     }
 
-    const diffBuf = PNG.sync.write(minDiffImg, {filterType: 4});
-
-    fs.writeFileSync(diffPath, diffBuf);
+    if (minDiffImg) {
+        const diffBuf = PNG.sync.write(minDiffImg, {filterType: 4});
+        fs.writeFileSync(diffPath, diffBuf);
+        testData.diff = diffBuf.toString('base64');
+        testData.expected = minExpectedBuf.toString('base64');
+    }
     fs.writeFileSync(actualPath, actualBuf);
 
     testData.difference = minDiff;
     testData.ok = minDiff <= testData.allowed;
 
-    testData.expected = minExpectedBuf.toString('base64');
-    testData.diff = diffBuf.toString('base64');
+    if (!testData.ok && process.env.UPDATE) {
+        console.log(`Updating ${expectedPath}`);
+        fs.writeFileSync(expectedPath, PNG.sync.write(actualImg));
+    }
 }
 
 /**
@@ -301,7 +302,7 @@ async function getImageFromStyle(styleForTest: StyleWithTestData, page: Page): P
                 }`;
 
                 const fragmentSource = `#version 300 es
-                
+
                 out highp vec4 fragColor;
                 void main() {
                     fragColor = vec4(1.0, 0.0, 0.0, 1.0);
@@ -452,7 +453,7 @@ async function getImageFromStyle(styleForTest: StyleWithTestData, page: Page): P
                 // Inject MapLibre projection code
                 ${shaderDescription.vertexShaderPrelude}
                 ${shaderDescription.define}
-                
+
                 in vec3 a_pos;
 
                 void main() {
@@ -673,8 +674,8 @@ async function getImageFromStyle(styleForTest: StyleWithTestData, page: Page): P
                     case 'setStyle':
                         map.setStyle(operation[1], {localIdeographFontFamily: false as any});
                         break;
-                    case 'pauseSource':
-                        map.style.sourceCaches[operation[1]].pause();
+                    case 'pauseTiles':
+                        map.style.tileManagers[operation[1]].pause();
                         break;
                     default:
                         if (typeof map[operation[0]] === 'function') {
@@ -945,7 +946,10 @@ async function closePageAndFinish(page: Page, reportCoverage: boolean) {
     const coverageReport = new CoverageReport({
         name: 'MapLibre Coverage Report',
         outputDir: './coverage/render',
-        reports: [['v8'], ['codecov']]
+        reports: [['v8'], ['json']],
+        sourcePath: (relativePath)=> {
+            return path.resolve(relativePath);
+        }
     });
     coverageReport.cleanCache();
 
@@ -982,15 +986,27 @@ async function executeRenderTests() {
         options.openBrowser = checkParameter(options, '--open-browser');
     }
 
-    const browser = await puppeteer.launch({headless: !options.openBrowser, args: ['--enable-webgl', '--no-sandbox',
-        '--disable-web-security']});
+    const browser = await launchPuppeteer(!options.openBrowser);
 
-    const server = http.createServer(
-        st({
-            path: 'test/integration/assets',
-            cors: true,
-        })
-    );
+    const mount = st({
+        path: 'test/integration/assets',
+        cors: true,
+        passthrough: true,
+    });
+    const server = http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify 'http://your-frontend-domain.com'
+        res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, DELETE');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Include any custom headers your client might send
+        mount(req, res, () => {
+            if (req.url.includes('/sparse204/1-')) {
+                res.writeHead(204);
+                res.end('');
+            } else {
+                res.writeHead(404);
+                res.end('');
+            }
+        });
+    });
 
     const mvtServer = http.createServer(
         st({
