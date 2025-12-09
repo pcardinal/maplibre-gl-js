@@ -9,8 +9,9 @@ import {cameraMercatorCoordinateFromCenterAndRotation} from './projection/mercat
 import {EXTENT} from '../data/extent';
 
 import type {PaddingOptions} from './edge_insets';
-import type {IReadonlyTransform, ITransformGetters} from './transform_interface';
-import type {OverscaledTileID} from '../source/tile_id';
+import type {IReadonlyTransform, ITransformGetters, TransformConstrainFunction} from './transform_interface';
+import type {OverscaledTileID} from '../tile/tile_id';
+import {Bounds} from './bounds';
 /**
  * If a path crossing the antimeridian would be shorter, extend the final coordinate so that
  * interpolating between the two endpoints will cross it.
@@ -49,17 +50,44 @@ export type UnwrappedTileIDType = {
 
 export type TransformHelperCallbacks = {
     /**
-     * Get center lngLat and zoom to ensure that
+     * The transform's default getter of center lngLat and zoom to ensure that
      * 1) everything beyond the bounds is excluded
      * 2) a given lngLat is as near the center as possible
      * Bounds are those set by maxBounds or North & South "Poles" and, if only 1 globe is displayed, antimeridian.
      */
-    getConstrained: (center: LngLat, zoom: number) => { center: LngLat; zoom: number };
+    defaultConstrain: TransformConstrainFunction;
 
     /**
      * Updates the underlying transform's internal matrices.
      */
     calcMatrices: () => void;
+};
+
+export type TransformOptions = {
+    /**
+     * The minimum zoom level of the map.
+     */
+    minZoom?: number;
+    /**
+     * The maximum zoom level of the map.
+     */
+    maxZoom?: number;
+    /**
+     * The minimum pitch of the map.
+     */
+    minPitch?: number;
+    /**
+     * The maximum pitch of the map.
+     */
+    maxPitch?: number;
+    /**
+     * Whether to render multiple copies of the world side by side in the map.
+     */
+    renderWorldCopies?: boolean;
+    /**
+     * An override of the transform's default constraining function for respecting its longitude and latitude bounds.
+     */
+    constrainOverride?: TransformConstrainFunction | null;
 };
 
 function getTileZoom(zoom: number): number {
@@ -122,16 +150,20 @@ export class TransformHelper implements ITransformGetters {
     _farZ: number;
     _autoCalculateNearFarZ: boolean;
 
-    constructor(callbacks: TransformHelperCallbacks, minZoom?: number, maxZoom?: number, minPitch?: number, maxPitch?: number, renderWorldCopies?: boolean) {
+    _constrainOverride: TransformConstrainFunction;
+
+    constructor(callbacks: TransformHelperCallbacks, options?: TransformOptions) {
         this._callbacks = callbacks;
         this._tileSize = 512; // constant
 
-        this._renderWorldCopies = renderWorldCopies === undefined ? true : !!renderWorldCopies;
-        this._minZoom = minZoom || 0;
-        this._maxZoom = maxZoom || 22;
+        this._renderWorldCopies = options?.renderWorldCopies === undefined ? true : !!options?.renderWorldCopies;
+        this._minZoom = options?.minZoom || 0;
+        this._maxZoom = options?.maxZoom || 22;
 
-        this._minPitch = (minPitch === undefined || minPitch === null) ? 0 : minPitch;
-        this._maxPitch = (maxPitch === undefined || maxPitch === null) ? 60 : maxPitch;
+        this._minPitch = (options?.minPitch === undefined || options?.minPitch === null) ? 0 : options?.minPitch;
+        this._maxPitch = (options?.maxPitch === undefined || options?.maxPitch === null) ? 60 : options?.maxPitch;
+
+        this._constrainOverride = options?.constrainOverride ?? null;
 
         this.setMaxBounds();
 
@@ -153,6 +185,7 @@ export class TransformHelper implements ITransformGetters {
     }
 
     public apply(thatI: ITransformGetters, constrain?: boolean, forceOverrideZ?: boolean): void {
+        this._constrainOverride = thatI.constrainOverride;
         this._latRange = thatI.latRange;
         this._lngRange = thatI.lngRange;
         this._width = thatI.width;
@@ -179,7 +212,7 @@ export class TransformHelper implements ITransformGetters {
         this._farZ = thatI.farZ;
         this._autoCalculateNearFarZ = !forceOverrideZ && thatI.autoCalculateNearFarZ;
         if (constrain) {
-            this._constrain();
+            this.constrainInternal();
         }
         this._calcMatrices();
     }
@@ -220,14 +253,14 @@ export class TransformHelper implements ITransformGetters {
     setMinZoom(zoom: number) {
         if (this._minZoom === zoom) return;
         this._minZoom = zoom;
-        this.setZoom(this.getConstrained(this._center, this.zoom).zoom);
+        this.setZoom(this.applyConstrain(this._center, this.zoom).zoom);
     }
 
     get maxZoom(): number { return this._maxZoom; }
     setMaxZoom(zoom: number) {
         if (this._maxZoom === zoom) return;
         this._maxZoom = zoom;
-        this.setZoom(this.getConstrained(this._center, this.zoom).zoom);
+        this.setZoom(this.applyConstrain(this._center, this.zoom).zoom);
     }
 
     get minPitch(): number { return this._minPitch; }
@@ -253,6 +286,15 @@ export class TransformHelper implements ITransformGetters {
         }
 
         this._renderWorldCopies = renderWorldCopies;
+    }
+
+    get constrainOverride(): TransformConstrainFunction { return this._constrainOverride; }
+    setConstrainOverride(constrain?: TransformConstrainFunction | null) {
+        if (constrain === undefined) constrain = null;
+        if (this._constrainOverride === constrain) return;
+        this._constrainOverride = constrain;
+        this.constrainInternal();
+        this._calcMatrices();
     }
 
     get worldSize(): number {
@@ -331,13 +373,13 @@ export class TransformHelper implements ITransformGetters {
 
     get zoom(): number { return this._zoom; }
     setZoom(zoom: number) {
-        const constrainedZoom = this.getConstrained(this._center, zoom).zoom;
+        const constrainedZoom = this.applyConstrain(this._center, zoom).zoom;
         if (this._zoom === constrainedZoom) return;
         this._unmodified = false;
         this._zoom = constrainedZoom;
         this._tileZoom = Math.max(0, Math.floor(constrainedZoom));
         this._scale = zoomScale(constrainedZoom);
-        this._constrain();
+        this.constrainInternal();
         this._calcMatrices();
     }
 
@@ -346,7 +388,7 @@ export class TransformHelper implements ITransformGetters {
         if (center.lat === this._center.lat && center.lng === this._center.lng) return;
         this._unmodified = false;
         this._center = center;
-        this._constrain();
+        this.constrainInternal();
         this._calcMatrices();
     }
 
@@ -357,7 +399,7 @@ export class TransformHelper implements ITransformGetters {
     setElevation(elevation: number) {
         if (elevation === this._elevation) return;
         this._elevation = elevation;
-        this._constrain();
+        this.constrainInternal();
         this._calcMatrices();
     }
 
@@ -421,14 +463,14 @@ export class TransformHelper implements ITransformGetters {
     interpolatePadding(start: PaddingOptions, target: PaddingOptions, t: number): void {
         this._unmodified = false;
         this._edgeInsets.interpolate(start, target, t);
-        this._constrain();
+        this.constrainInternal();
         this._calcMatrices();
     }
 
     resize(width: number, height: number, constrain: boolean = true): void {
         this._width = width;
         this._height = height;
-        if (constrain) this._constrain();
+        if (constrain) this.constrainInternal();
         this._calcMatrices();
     }
 
@@ -451,15 +493,11 @@ export class TransformHelper implements ITransformGetters {
         if (bounds) {
             this._lngRange = [bounds.getWest(), bounds.getEast()];
             this._latRange = [bounds.getSouth(), bounds.getNorth()];
-            this._constrain();
+            this.constrainInternal();
         } else {
             this._lngRange = null;
             this._latRange = [-MAX_VALID_LATITUDE, MAX_VALID_LATITUDE];
         }
-    }
-
-    private getConstrained(lngLat: LngLat, zoom: number): {center: LngLat; zoom: number} {
-        return this._callbacks.getConstrained(lngLat, zoom);
     }
 
     /**
@@ -476,16 +514,7 @@ export class TransformHelper implements ITransformGetters {
         if (queryGeometry.length === 1) {
             return [queryGeometry[0], cameraPoint];
         } else {
-            let minX = cameraPoint.x;
-            let minY = cameraPoint.y;
-            let maxX = cameraPoint.x;
-            let maxY = cameraPoint.y;
-            for (const p of queryGeometry) {
-                minX = Math.min(minX, p.x);
-                minY = Math.min(minY, p.y);
-                maxX = Math.max(maxX, p.x);
-                maxY = Math.max(maxY, p.y);
-            }
+            const {minX, minY, maxX, maxY} = Bounds.fromPoints(queryGeometry).extend(cameraPoint);
             return [
                 new Point(minX, minY),
                 new Point(maxX, minY),
@@ -496,15 +525,23 @@ export class TransformHelper implements ITransformGetters {
         }
     }
 
+    applyConstrain: TransformConstrainFunction = (lngLat, zoom) => {
+        if (this._constrainOverride !== null) {
+            return this._constrainOverride(lngLat, zoom);
+        } else {
+            return this._callbacks.defaultConstrain(lngLat, zoom);
+        }
+    };
+
     /**
      * @internal
      * Snaps the transform's center, zoom, etc. into the valid range.
      */
-    private _constrain(): void {
+    private constrainInternal(): void {
         if (!this.center || !this._width || !this._height || this._constraining) return;
         this._constraining = true;
         const unmodified = this._unmodified;
-        const {center, zoom} = this.getConstrained(this.center, this.zoom);
+        const {center, zoom} = this.applyConstrain(this.center, this.zoom);
         this.setCenter(center);
         this.setZoom(zoom);
         this._unmodified = unmodified;

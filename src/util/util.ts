@@ -3,9 +3,10 @@ import UnitBezier from '@mapbox/unitbezier';
 import {isOffscreenCanvasDistorted} from './offscreen_canvas_distorted';
 import type {Size} from './image';
 import type {WorkerGlobalScopeInterface} from './web_worker';
-import {mat3, mat4, quat, vec2, type vec3, type vec4} from 'gl-matrix';
+import {mat3, mat4, quat, vec2, vec3, type vec4} from 'gl-matrix';
 import {pixelsToTileUnits} from '../source/pixels_to_tile_units';
-import {type OverscaledTileID} from '../source/tile_id';
+import {type OverscaledTileID} from '../tile/tile_id';
+import type {Event} from './evented';
 
 /**
  * Returns a new 64 bit float vec4 of zeroes.
@@ -82,6 +83,46 @@ export function pointPlaneSignedDistance(
     point: vec3 | [number, number, number]
 ): number {
     return plane[0] * point[0] + plane[1] * point[1] + plane[2] * point[2] + plane[3];
+}
+
+/**
+ * Finds an intersection points of three planes. Returns `null` if no such (single) point exists.
+ * The planes *must* be in Hessian normal form - their xyz components must form a unit vector.
+ */
+export function threePlaneIntersection(plane0: vec4, plane1: vec4, plane2: vec4): vec3 | null {
+    // https://mathworld.wolfram.com/Plane-PlaneIntersection.html
+    const det = mat3.determinant([
+        plane0[0], plane0[1], plane0[2],
+        plane1[0], plane1[1], plane1[2],
+        plane2[0], plane2[1], plane2[2]
+    ] as mat3);
+    if (det === 0) {
+        return null;
+    }
+    const cross12 = vec3.cross([] as any, [plane1[0], plane1[1], plane1[2]], [plane2[0], plane2[1], plane2[2]]);
+    const cross20 = vec3.cross([] as any, [plane2[0], plane2[1], plane2[2]], [plane0[0], plane0[1], plane0[2]]);
+    const cross01 = vec3.cross([] as any, [plane0[0], plane0[1], plane0[2]], [plane1[0], plane1[1], plane1[2]]);
+    const sum = vec3.scale([] as any, cross12, -plane0[3]);
+    vec3.add(sum, sum, vec3.scale([] as any, cross20, -plane1[3]));
+    vec3.add(sum, sum, vec3.scale([] as any, cross01, -plane2[3]));
+    vec3.scale(sum, sum, 1.0 / det);
+    return sum;
+}
+
+/**
+ * Returns a parameter `t` such that the point obtained by
+ * `origin + direction * t` lies on the given plane.
+ * If the ray is parallel to the plane, returns null.
+ * Returns a negative value if the ray is pointing away from the plane.
+ * Direction does not need to be normalized.
+ */
+export function rayPlaneIntersection(origin: vec3, direction: vec3, plane: vec4): number | null {
+    const dotOriginPlane = origin[0] * plane[0] + origin[1] * plane[1] + origin[2] * plane[2];
+    const dotDirectionPlane = direction[0] * plane[0] + direction[1] * plane[1] + direction[2] * plane[2];
+    if (dotDirectionPlane === 0) {
+        return null;
+    }
+    return (-dotOriginPlane -plane[3]) / dotDirectionPlane;
 }
 
 /**
@@ -247,6 +288,46 @@ export function getAABB(points: Array<Point>): [number, number, number, number] 
     }
 
     return [tlX, tlY, brX, brY];
+}
+
+/**
+ * For a given set of tile ids, returns the edge tile ids for the bounding box.
+ */
+export function getEdgeTiles(tileIDs: OverscaledTileID[]): Set<OverscaledTileID> {
+    if (!tileIDs.length) return new Set<OverscaledTileID>();
+
+    // set a common zoom for calculation (highest zoom) to reproject all tiles to this same zoom
+    const targetZ = Math.max(...tileIDs.map(id => id.canonical.z));
+
+    // vars to store the min and max tile x/y coordinates for edge finding
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+
+    // project all tiles to targetZ while maintaining the reference to the original tile
+    const projected: {id: OverscaledTileID; x: number; y: number}[] = [];
+    for (const id of tileIDs) {
+        const {x, y, z} = id.canonical;
+        const scale = Math.pow(2, targetZ - z);
+        const px = x * scale;
+        const py = y * scale;
+
+        projected.push({id, x: px, y: py});
+
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+    }
+
+    // find edge tiles using the reprojected tile ids
+    const edgeTiles: Set<OverscaledTileID> = new Set<OverscaledTileID>();
+    for (const p of projected) {
+        if (p.x === minX || p.x === maxX || p.y === minY || p.y === maxY) {
+            edgeTiles.add(p.id);
+        }
+    }
+
+    return edgeTiles;
 }
 
 /**
@@ -1005,6 +1086,13 @@ export type Complete<T> = {
  */
 export type RequireAtLeastOne<T> = { [K in keyof T]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<keyof T, K>>>; }[keyof T];
 
+/**
+* A helper to allow require exactly one one property
+ */
+export type ExactlyOne<T, Keys extends keyof T = keyof T> = {
+    [K in Keys]: Required<Pick<T, K>> & { [P in Exclude<Keys, K>]?: never }
+}[Keys];
+
 export type TileJSON = {
     tilejson: '2.2.0' | '2.1.0' | '2.0.1' | '2.0.0' | '1.0.0';
     name?: string;
@@ -1035,3 +1123,37 @@ export const MAX_TILE_ZOOM = 25;
 export const MIN_TILE_ZOOM = 0;
 
 export const MAX_VALID_LATITUDE = 85.051129;
+
+const touchableEvents = {
+    touchstart: true,
+    touchmove: true,
+    touchmoveWindow: true,
+    touchend: true,
+    touchcancel: true
+};
+
+const pointableEvents = {
+    dblclick: true,
+    click: true,
+    mouseover: true,
+    mouseout: true,
+    mousedown: true,
+    mousemove: true,
+    mousemoveWindow: true,
+    mouseup: true,
+    mouseupWindow: true,
+    contextmenu: true,
+    wheel: true
+};
+
+export function isTouchableEvent(event: Event, eventType: string): event is TouchEvent {
+    return touchableEvents[eventType] && 'touches' in event;
+}
+
+export function isPointableEvent(event: Event, eventType: string): event is MouseEvent {
+    return pointableEvents[eventType] && (event instanceof MouseEvent || event instanceof WheelEvent);
+}
+
+export function isTouchableOrPointableType(eventType: string): boolean {
+    return touchableEvents[eventType] || pointableEvents[eventType];
+}

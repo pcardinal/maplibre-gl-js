@@ -7,9 +7,10 @@ import WorkerTransfer from '../benchmarks/worker_transfer';
 import Paint from '../benchmarks/paint';
 import PaintStates from '../benchmarks/paint_states';
 import {PropertyLevelRemove, FeatureLevelRemove, SourceLevelRemove} from '../benchmarks/remove_paint_state';
-import {LayerBackground, LayerCircle, LayerFill, LayerFillExtrusion, LayerHeatmap, LayerHillshade, LayerLine, LayerRaster, LayerSymbol, LayerSymbolWithIcons, LayerTextWithVariableAnchor, LayerSymbolWithSortKey} from '../benchmarks/layers';
+import {LayerBackground, LayerCircle, LayerFill, LayerFillExtrusion, LayerHeatmap, LayerHillshade, LayerColorRelief2Colors, LayerColorRelief256Colors, LayerLine, LayerRaster, LayerSymbol, LayerSymbolWithIcons, LayerTextWithVariableAnchor, LayerSymbolWithSortKey} from '../benchmarks/layers';
 import Load from '../benchmarks/map_load';
 import HillshadeLoad from '../benchmarks/hillshade_load';
+import ColorReliefLoad from '../benchmarks/color_relief_load';
 import Validate from '../benchmarks/style_validate';
 import StyleLayerCreate from '../benchmarks/style_layer_create';
 import QueryPoint from '../benchmarks/query_point';
@@ -25,6 +26,9 @@ import SymbolCollisionBox from '../benchmarks/symbol_collision_box';
 import Subdivide from '../benchmarks/subdivide';
 import LoadMatchingFeature from '../benchmarks/feature_index';
 import CoveringTilesGlobe from '../benchmarks/covering_tiles_globe';
+import CoveringTilesMercator from '../benchmarks/covering_tiles_mercator';
+import GeoJSONDiff from '../benchmarks/geojson_diff';
+import GeoJSONSet from '../benchmarks/geojson_set';
 
 const styleLocations = locationsWithTileID(styleBenchmarkLocations.features  as GeoJSON.Feature<GeoJSON.Point>[]).filter(v => v.zoom < 15); // the used maptiler sources have a maxzoom of 14
 
@@ -45,6 +49,8 @@ const locations = zooms.map(zoom => ({center, zoom}));
 register('Paint', new Paint(style, locations));
 register('QueryPoint', new QueryPoint(style, locations));
 register('QueryBox', new QueryBox(style, locations));
+register('GeoJSONDiff', new GeoJSONDiff());
+register('GeoJSONSet', new GeoJSONSet());
 register('Layout', new Layout(style));
 register('Placement', new Placement(style, locations));
 register('Validate', new Validate(style));
@@ -64,6 +70,8 @@ register('LayerFill', new LayerFill());
 register('LayerFillExtrusion', new LayerFillExtrusion());
 register('LayerHeatmap', new LayerHeatmap());
 register('LayerHillshade', new LayerHillshade());
+register('LayerColorRelief2Colors', new LayerColorRelief2Colors());
+register('LayerColorRelief256Colors', new LayerColorRelief256Colors());
 register('LayerLine', new LayerLine());
 register('LayerRaster', new LayerRaster());
 register('LayerSymbol', new LayerSymbol());
@@ -76,6 +84,7 @@ register('SymbolLayout', new SymbolLayout(style, styleLocations.map(location => 
 register('FilterCreate', new FilterCreate());
 register('FilterEvaluate', new FilterEvaluate());
 register('HillshadeLoad', new HillshadeLoad());
+register('ColorReliefLoad', new ColorReliefLoad());
 register('CustomLayer', new CustomLayer());
 register('MapIdle', new MapIdle());
 register('SymbolCollisionBox', new SymbolCollisionBox(false));
@@ -83,6 +92,8 @@ register('SymbolCollisionBoxGlobe', new SymbolCollisionBox(true));
 register('Subdivide', new Subdivide());
 register('CoveringTilesGlobe', new CoveringTilesGlobe(0));
 register('CoveringTilesGlobePitched', new CoveringTilesGlobe(60));
+register('CoveringTilesMercator', new CoveringTilesMercator(0));
+register('CoveringTilesMercatorPitched', new CoveringTilesMercator(60));
 
 Promise.resolve().then(() => {
     // Ensure the global worker pool is never drained. Browsers have resource limits
