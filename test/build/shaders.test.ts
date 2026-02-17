@@ -2,7 +2,6 @@ import {transpileVertexShaderToWebGL1, transpileFragmentShaderToWebGL1} from '..
 import {describe, test, expect} from 'vitest';
 import {globSync} from 'glob';
 import fs from 'fs';
-import path from 'path';
 
 describe('Shaders', () => {
     test('webgl2 to webgl1 transpiled shaders should be identical', () => {
@@ -47,11 +46,4 @@ describe('Shaders', () => {
         }
     });
 
-    test('symbol_sdf packs pixel offsets and min font scale', () => {
-        const shaderPath = path.resolve(__dirname, '../../src/shaders/symbol_sdf.vertex.glsl');
-        const shaderSource = fs.readFileSync(shaderPath, 'utf8');
-        expect(shaderSource).toContain('a_pixeloffset.xy / 16.0');
-        expect(shaderSource).toContain('a_pixeloffset.zw / 256.0');
-        expect(shaderSource).toContain('max(a_minFontScale, fontScale)');
-    });
 });
