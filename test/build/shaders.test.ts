@@ -45,5 +45,4 @@ describe('Shaders', () => {
             expect(shaderSource.includes('texture2D')).toBe(false);
         }
     });
-
 });
