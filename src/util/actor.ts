@@ -147,7 +147,9 @@ export class Actor implements IActor {
     receive(message: {data: MessageData}) {
         const data = message.data;
         const id = data.id;
-        if (data.origin !== 'file://' && location.origin !== 'file://' && data.origin !== 'resource://android' && location.origin !== 'resource://android' && data.origin !== location.origin) {
+        const isOpaqueOriginCase = data.origin === 'null' || location.origin === 'null';
+        // Ignore cross-origin messages except for opaque origins and known file/resource cases.
+        if (data.origin !== 'file://' && location.origin !== 'file://' && data.origin !== 'resource://android' && location.origin !== 'resource://android' && data.origin !== location.origin && !isOpaqueOriginCase) {
             return;
         }
         if (data.targetMapId && this.mapId !== data.targetMapId) {
