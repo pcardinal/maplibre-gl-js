@@ -6,7 +6,8 @@
 - Add `boxZoom.boxZoomEnd` option to customize the action after Shift-drag box selection ([#6397](https://github.com/maplibre/maplibre-gl-js/issues/6397))
 
 ### 🐞 Bug fixes
-- _...Add new stuff here..._
+- _...Add new stuff here...
+- Fix(raster): Add proper cancellation of in-flight raster tile requests on setUrl ([#7149](https://github.com/maplibre/maplibre-gl-js/pull/7149))(by [@pcardinal](https://github.com/pcardinal))
 - Fix: Allow opaque origins ("null") in Actor message filtering ([#7047](https://github.com/maplibre/maplibre-gl-js/pull/7047))(by [@pcardinal](https://github.com/pcardinal))
 
 ## 5.19.0
