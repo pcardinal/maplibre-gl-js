@@ -3,12 +3,14 @@
 ### ✨ Features and improvements
 - Add Etag unmodified support to optimize vector tile reloading ([#7074](https://github.com/maplibre/maplibre-gl-js/pull/7074)) (by [@rivkamatan](https://github.com/rivkamatan and [@wayofthefuture](https://github.com/wayofthefuture))
 - Add `boxZoom.boxZoomEnd` option to customize the action after Shift-drag box selection ([#6397](https://github.com/maplibre/maplibre-gl-js/issues/6397))
+- Implement `resampling` paint property for raster, hillshade, and color-relief layers ([#7074](https://github.com/maplibre/maplibre-gl-js/pull/7194)) (by [@larsmaxfield](https://github.com/larsmaxfield))
 - Add updateable support for GeoJSON-VT ([#7172](https://github.com/maplibre/maplibre-gl-js/issues/7172)) (by [@wayofthefuture](https://github.com/wayofthefuture) and [HarelM](https://github.com/HarelM))
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
 - _...Add new stuff here...
 - Fix(raster): Add proper cancellation of in-flight raster tile requests on setUrl ([#7149](https://github.com/maplibre/maplibre-gl-js/pull/7149))(by [@pcardinal](https://github.com/pcardinal))
+- Fix: Tiles are not cleared when using vector tile source `setUrl/setTiles` ([#7185](https://github.com/maplibre/maplibre-gl-js/issues/7185))(by [@madoci](https://github.com/madoci))
 - Fix: Allow opaque origins ("null") in Actor message filtering ([#7047](https://github.com/maplibre/maplibre-gl-js/pull/7047))(by [@pcardinal](https://github.com/pcardinal))
 
 ## 5.19.0
