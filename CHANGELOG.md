@@ -9,7 +9,7 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here...
-- Fix(raster): Add proper cancellation of in-flight raster tile requests on setUrl ([#7149](https://github.com/maplibre/maplibre-gl-js/pull/7149))(by [@pcardinal](https://github.com/pcardinal))
+- Fix: Add proper cancellation of in-flight raster/tile tile requests on setUrl ([#7149](https://github.com/maplibre/maplibre-gl-js/pull/7149))(by [@pcardinal](https://github.com/pcardinal))
 - Fix: Tiles are not cleared when using vector tile source `setUrl/setTiles` ([#7185](https://github.com/maplibre/maplibre-gl-js/issues/7185))(by [@madoci](https://github.com/madoci))
 - Fix: Allow opaque origins ("null") in Actor message filtering ([#7047](https://github.com/maplibre/maplibre-gl-js/pull/7047))(by [@pcardinal](https://github.com/pcardinal))
 
