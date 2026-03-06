@@ -129,15 +129,15 @@ export class TileManager extends Evented {
         if (this._inViewTiles) {
             for (const id of this._inViewTiles.getAllIds()) {
                 const tile = this._inViewTiles.getTileById(id);
-                if (tile && tile.abortController) {
-                    tile.abortController.abort();
-                }
+                if (!tile) continue;
+
+                tile.aborted = true;
+                tile.abortController?.abort();
+                void (this._source as any)?.abortTile?.(tile);
             }
         }
-        // Cancels out-of-sight tile queries
-        if (this._outOfViewCache && typeof this._outOfViewCache.abortAllRequests === 'function') {
-            this._outOfViewCache.abortAllRequests();
-        }
+
+        this._outOfViewCache?.abortAllRequests?.();
     }
 
     onAdd(map: Map) {
@@ -813,19 +813,24 @@ export class TileManager extends Evented {
     private _dataHandler(e: MapSourceDataEvent) {
         if (e.dataType !== 'source') return;
 
+        const internal = e as MapSourceDataEvent & {abortPendingTileRequests?: boolean};
+
+        // Event interne d'abort (émis avant metadata/content)
+        if (internal.abortPendingTileRequests && e.sourceDataType == null) {
+            this.abortAllRequests();
+            this._sourceLoaded = false;
+            return;
+        }
+
         if (e.sourceDataType === 'metadata') {
             this._sourceLoaded = true;
             return;
         }
 
-        if (e.sourceDataType !== 'content' || !this._sourceLoaded || this._paused) {
-            return;
-        }
+        if (e.sourceDataType !== 'content' || !this._sourceLoaded || this._paused) return;
 
         this.reload(e.sourceDataChanged, e.shouldReloadTileOptions);
-        if (this.transform) {
-            this.update(this.transform, this.terrain);
-        }
+        if (this.transform) this.update(this.transform, this.terrain);
         this._didEmitContent = true;
     }
 

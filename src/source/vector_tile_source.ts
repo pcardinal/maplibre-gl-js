@@ -123,20 +123,17 @@ export class VectorTileSource extends Evented implements Source {
                 extend(this, tileJSON);
                 if (tileJSON.bounds) this.tileBounds = new TileBounds(tileJSON.bounds, this.minzoom, this.maxzoom);
 
-                // `content` is included here to prevent a race condition where `Style._updateSources` is called
-                // before the TileJSON arrives. this makes sure the tiles needed are loaded once TileJSON arrives
-                // ref: https://github.com/mapbox/mapbox-gl-js/pull/4347#discussion_r104418088
                 this.fire(new Event('data', {dataType: 'source', sourceDataType: 'metadata'}));
-                this.fire(new Event('data', {dataType: 'source', sourceDataType: 'content', sourceDataChanged}));
+                this.fire(new Event('data', {
+                    dataType: 'source',
+                    sourceDataType: 'content',
+                    sourceDataChanged
+                } as any));
             }
         } catch (err) {
             this._tileJSONRequest = null;
-            this._loaded = true; // let's pretend it's loaded so the source will be ignored
-
-            // only fire error event if it is not due to aborting the request
-            if (!isAbortError(err)) {
-                this.fire(new ErrorEvent(err));
-            }
+            this._loaded = true;
+            if (!isAbortError(err)) this.fire(new ErrorEvent(err));
         }
     }
 
@@ -156,11 +153,19 @@ export class VectorTileSource extends Evented implements Source {
     setSourceProperty(callback: Function) {
         if (this._tileJSONRequest) {
             this._tileJSONRequest.abort();
+            this._tileJSONRequest = null;
         }
 
-        callback();
+        this._loaded = false;
 
-        this.load(true);
+        // Abort immédiat des requêtes de tuiles en vol
+        this.fire(new Event('data', {
+            dataType: 'source',
+            abortPendingTileRequests: true
+        } as any));
+
+        callback();
+        this.load(true); // garder 1 argument
     }
 
     /**
@@ -220,6 +225,7 @@ export class VectorTileSource extends Evented implements Source {
             etag: tile.etag
         };
         params.request.collectResourceTiming = this._collectResourceTiming;
+
         let messageType: MessageType.loadTile | MessageType.reloadTile = MessageType.reloadTile;
         if (!tile.actor || tile.state === 'expired') {
             tile.actor = this.dispatcher.getActor();
@@ -229,14 +235,27 @@ export class VectorTileSource extends Evented implements Source {
                 tile.reloadPromise = {resolve, reject};
             });
         }
+
+        const restartQueuedReload = () => {
+            if (!tile.reloadPromise) return;
+            const reloadPromise = tile.reloadPromise;
+            tile.reloadPromise = null;
+            this.loadTile(tile).then(reloadPromise.resolve).catch(reloadPromise.reject);
+        };
+
+        tile.aborted = false;
         tile.abortController = new AbortController();
+
         try {
             const data = await tile.actor.sendAsync({type: messageType, data: params}, tile.abortController);
             delete tile.abortController;
 
             if (tile.aborted) {
+                tile.state = 'expired';
+                restartQueuedReload();
                 return;
             }
+
             this._afterTileLoadWorkerResponse(tile, data);
 
             const result: LoadTileResult = {};
@@ -245,12 +264,13 @@ export class VectorTileSource extends Evented implements Source {
         } catch (err) {
             delete tile.abortController;
 
-            if (tile.aborted) {
+            if (tile.aborted || isAbortError(err)) {
+                tile.state = 'expired';
+                restartQueuedReload();
                 return;
             }
-            if (err && err.status !== 404) {
-                throw err;
-            }
+
+            if (err && err.status !== 404) throw err;
             this._afterTileLoadWorkerResponse(tile, null);
         }
     }
@@ -295,6 +315,7 @@ export class VectorTileSource extends Evented implements Source {
     }
 
     async abortTile(tile: Tile): Promise<void> {
+        tile.state = 'expired';
         if (tile.abortController) {
             tile.abortController.abort();
             delete tile.abortController;
